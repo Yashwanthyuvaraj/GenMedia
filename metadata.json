@@ -1,0 +1,7 @@
+{
+  "name": "GenMedia",
+  "description": "An all-in-one application to explore the capabilities of the Gemini API. Analyze images and videos, transcribe audio, and generate new images from text prompts.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
