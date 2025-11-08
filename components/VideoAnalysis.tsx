@@ -127,7 +127,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
       const prompt = "Analyze this sequence of video frames and format the response in Markdown. Start with a short, catchy title using a main heading (e.g., '# Title'). Then, provide a concise one-paragraph summary. Finally, list the key events or elements in a bulleted list under a subheading (e.g., '## Key Events').";
       
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-pro',
+        model: 'gemini-2.5-flash',
         contents: { parts: [{text: prompt}, ...frames] },
       });
 
@@ -238,6 +238,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
             </div>
         </div>
       )}
+      </div>
     </Card>
   );
 };

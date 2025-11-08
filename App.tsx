@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(checkAuthStatus().isLoggedIn);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.ImageAnalysis);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { isKeyReady, promptForApiKey, handleApiError, getGenAiClient, apiKeyError, revokeApiKey, setUserProvidedApiKey } = useApiKey(isLoggedIn);
+  const { isKeyReady, promptForApiKey, handleApiError, getGenAiClient, apiKeyError, revokeApiKey, setUserProvidedApiKey, isVerifying } = useApiKey(isLoggedIn);
 
   const handleLogout = useCallback(() => {
     logout();
@@ -41,6 +41,7 @@ const App: React.FC = () => {
       setUserProvidedApiKey={setUserProvidedApiKey}
       error={apiKeyError} 
       isAistudioAvailable={isAistudioAvailable}
+      isVerifying={isVerifying}
     />;
   }
   

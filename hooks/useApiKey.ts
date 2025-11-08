@@ -8,6 +8,7 @@ import { GoogleGenAI } from '@google/genai';
 export const useApiKey = (isLoggedIn: boolean) => {
   const [isKeyReady, setIsKeyReady] = useState(false);
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const checkKey = useCallback(async () => {
     // Check for user-provided key first when outside aistudio
@@ -42,32 +43,6 @@ export const useApiKey = (isLoggedIn: boolean) => {
     }
   }, [isLoggedIn, checkKey]);
 
-  const setUserProvidedApiKey = useCallback((key: string) => {
-    if (key.trim()) {
-        sessionStorage.setItem('genmedia_user_api_key', key.trim());
-        setIsKeyReady(true);
-        setApiKeyError(null);
-    }
-  }, []);
-
-  const promptForApiKey = useCallback(async () => {
-    if (window.aistudio) {
-      setApiKeyError(null); // Clear previous error on new attempt
-      await window.aistudio.openSelectKey();
-      
-      localStorage.setItem('genmedia_key_selected', 'true');
-      
-      setIsKeyReady(true);
-    }
-  }, []);
-
-  const revokeApiKey = useCallback(() => {
-    localStorage.removeItem('genmedia_key_selected');
-    sessionStorage.removeItem('genmedia_user_api_key');
-    setIsKeyReady(false);
-    setApiKeyError(null); // Clear any errors
-  }, []);
-
   const handleApiError = useCallback((error: any) => {
     console.error("API Error:", error);
     
@@ -89,8 +64,8 @@ export const useApiKey = (isLoggedIn: boolean) => {
       
       if (isBillingError) {
         reason = "The API key is not associated with a billed project.";
-      } else if (isApiKeyNotSetError) {
-        reason = "An API key has not been provided.";
+      } else if (isApiKeyNotSetError || isInvalidKeyError) {
+        reason = "The API key provided is not valid.";
       }
 
       const instruction = "Please provide a valid API key to continue.";
@@ -102,6 +77,52 @@ export const useApiKey = (isLoggedIn: boolean) => {
 
       setIsKeyReady(false); // This will trigger the ApiKeyPrompt
     }
+  }, []);
+
+  const setUserProvidedApiKey = useCallback(async (key: string) => {
+    const trimmedKey = key.trim();
+    if (!trimmedKey) return;
+
+    setIsVerifying(true);
+    setApiKeyError(null);
+
+    try {
+      // Create a temporary client to test the key
+      const tempAi = new GoogleGenAI({ apiKey: trimmedKey });
+      // Make a simple, low-cost call to verify the key is valid and has permissions.
+      await tempAi.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: 'test',
+      });
+
+      // If the call succeeds, save the key and set ready state
+      sessionStorage.setItem('genmedia_user_api_key', trimmedKey);
+      setIsKeyReady(true);
+    } catch (err) {
+      // If it fails, it's a bad key. Show the error.
+      handleApiError(err);
+      setIsKeyReady(false);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [handleApiError]);
+
+  const promptForApiKey = useCallback(async () => {
+    if (window.aistudio) {
+      setApiKeyError(null); // Clear previous error on new attempt
+      await window.aistudio.openSelectKey();
+      
+      localStorage.setItem('genmedia_key_selected', 'true');
+      
+      setIsKeyReady(true);
+    }
+  }, []);
+
+  const revokeApiKey = useCallback(() => {
+    localStorage.removeItem('genmedia_key_selected');
+    sessionStorage.removeItem('genmedia_user_api_key');
+    setIsKeyReady(false);
+    setApiKeyError(null); // Clear any errors
   }, []);
   
   const getGenAiClient = useCallback(() => {
@@ -118,5 +139,5 @@ export const useApiKey = (isLoggedIn: boolean) => {
     return new GoogleGenAI({ apiKey });
   }, []);
 
-  return { isKeyReady, promptForApiKey, handleApiError, getGenAiClient, apiKeyError, revokeApiKey, setUserProvidedApiKey };
+  return { isKeyReady, promptForApiKey, handleApiError, getGenAiClient, apiKeyError, revokeApiKey, setUserProvidedApiKey, isVerifying };
 };
