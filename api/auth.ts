@@ -10,10 +10,13 @@ const getUsers = (): User[] => {
   const usersJson = localStorage.getItem('genmedia_users');
   if (usersJson) {
     try {
-      return JSON.parse(usersJson);
+      const parsedData = JSON.parse(usersJson);
+      // Ensure we have an array before returning
+      if (Array.isArray(parsedData)) {
+        return parsedData;
+      }
     } catch (e) {
       console.error("Failed to parse users from localStorage", e);
-      return [];
     }
   }
   return [];
@@ -31,12 +34,13 @@ export const login = async (email: string, password: string): Promise<{ success:
     if (!email || !password) {
         return { success: false, message: 'Email and password are required.' };
     }
-    console.log(`Attempting login for ${email}`);
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Attempting login for ${normalizedEmail}`);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const users = getUsers();
-    const user = users.find(u => u.email === email);
+    const user = users.find(u => u.email === normalizedEmail);
 
     if (!user) {
         return { success: false, message: 'This email is not registered. Please sign up.' };
@@ -58,19 +62,20 @@ export const signup = async (email: string, password: string): Promise<{ success
     if (!email || !password || password.length < 6) {
         return { success: false, message: 'Please provide a valid email and a password of at least 6 characters.' };
     }
-    console.log(`Attempting signup for ${email}`);
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Attempting signup for ${normalizedEmail}`);
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const users = getUsers();
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = users.find(u => u.email === normalizedEmail);
 
     if (existingUser) {
         return { success: false, message: 'A user with this email already exists. Please log in.' };
     }
 
-    // Add new user
-    const newUser: User = { email, password };
+    // Add new user with normalized email
+    const newUser: User = { email: normalizedEmail, password };
     const updatedUsers = [...users, newUser];
     saveUsers(updatedUsers);
 

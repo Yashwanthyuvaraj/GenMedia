@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface TabButtonProps {
@@ -11,8 +10,8 @@ interface TabButtonProps {
 const TabButton: React.FC<TabButtonProps> = ({ label, icon, isActive, onClick }) => {
   const baseClasses =
     'flex items-center gap-2 sm:gap-3 px-4 py-2.5 rounded-full text-sm sm:text-base font-semibold transition-all duration-300 ease-in-out transform focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-sky-500';
-  const activeClasses = 'bg-sky-500 text-white shadow-lg scale-105';
-  const inactiveClasses = 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white';
+  const activeClasses = 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-105';
+  const inactiveClasses = 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white';
 
   return (
     <button onClick={onClick} className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>

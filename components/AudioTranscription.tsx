@@ -5,6 +5,7 @@ import { encode } from '../utils/audioUtils';
 // Fix: Removed LiveSession from import as it is not an exported member.
 // Imported LiveServerMessage for proper type-checking of messages from the server.
 import { Modality, Blob as GenAiBlob, LiveServerMessage } from '@google/genai';
+import ErrorMessage from './shared/ErrorMessage';
 
 // Fix: Defined a local LiveSession interface for type safety as it's not exported from the library.
 interface LiveSession {
@@ -87,7 +88,7 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient, ha
           },
           onerror: (e: ErrorEvent) => {
             console.error('Live session error:', e);
-            setError('An error occurred during the session.');
+            setError('A session error occurred. Please try stopping and starting the recording again.');
             handleApiError(e);
             stopRecording();
           },
@@ -105,7 +106,7 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient, ha
 
     } catch (err) {
       console.error('Failed to start recording:', err);
-      setError('Could not access microphone. Please check permissions.');
+      setError('Microphone access denied. Please enable microphone permissions for this site in your browser settings.');
       setIsRecording(false);
       handleApiError(err);
     }
@@ -135,7 +136,7 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient, ha
   return (
     <Card>
       <div className="flex flex-col gap-4">
-        <div className="flex-grow">
+        <div className="flex-grow text-center">
           <h2 className="text-2xl font-bold text-sky-400">Real-time Audio Transcription</h2>
           <p className="text-slate-400 mb-4">Click "Start Recording" and speak. Your words will be transcribed live.</p>
         </div>
@@ -159,10 +160,10 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient, ha
             ) : 'Start Recording'}
           </button>
         </div>
-        <div className="bg-slate-900 rounded-lg p-4 min-h-[150px] w-full">
-          {error && <p className="text-red-400">{error}</p>}
-          <p className="text-slate-300 whitespace-pre-wrap">
-            {transcription || <span className="text-slate-500">Transcription will appear here...</span>}
+        <div className="bg-slate-900 rounded-lg p-4 min-h-[250px] w-full">
+          {error && <ErrorMessage title="Transcription Error" message={error} />}
+          <p className="text-slate-300 whitespace-pre-wrap text-lg">
+            {transcription || (!error && <span className="text-slate-500">Transcription will appear here...</span>)}
           </p>
         </div>
       </div>

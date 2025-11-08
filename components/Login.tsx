@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { login } from '../api/auth';
+import ErrorMessage from './shared/ErrorMessage';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -35,7 +36,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, switchToSignUp }) => {
     <div className="w-full max-w-sm">
       <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold text-center text-sky-400 mb-6">Log In</h2>
-        {error && <p className="bg-red-900/50 text-red-300 text-center text-sm p-3 rounded-md mb-4">{error}</p>}
+        {error && <ErrorMessage title="Login Failed" message={error} className="mb-4" />}
         <div className="mb-4">
           <label className="block text-slate-300 text-sm font-bold mb-2" htmlFor="email">
             Email
