@@ -12,22 +12,26 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setIsLoading(true);
 
     try {
       const response = await signup(email, password);
       if (response.success) {
-        onSignUpSuccess();
+        setSuccessMessage('Sign up successful! Logging you in...');
+        // Wait a moment so the user can see the message before transitioning
+        setTimeout(onSignUpSuccess, 1500);
       } else {
         setError(response.message || 'Sign up failed. Please try again.');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('An unexpected error occurred.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -37,12 +41,17 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
       <form onSubmit={handleSubmit} className="bg-slate-800 border border-slate-700 shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4">
         <h2 className="text-2xl font-bold text-center text-sky-400 mb-6">Sign Up</h2>
         {error && <ErrorMessage title="Sign-Up Failed" message={error} className="mb-4" />}
+        {successMessage && (
+          <div className="bg-green-900/50 text-green-200 text-sm p-3 rounded-lg mb-4 text-center" role="alert">
+            {successMessage}
+          </div>
+        )}
         <div className="mb-4">
           <label className="block text-slate-300 text-sm font-bold mb-2" htmlFor="email-signup">
             Email
           </label>
           <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 bg-slate-700 border-slate-600 text-slate-200 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-sky-500"
+            className="shadow appearance-none border rounded w-full py-2 px-3 bg-slate-700 border-slate-600 text-slate-200 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
             id="email-signup"
             type="email"
             placeholder="Email"
@@ -50,6 +59,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            disabled={isLoading}
           />
         </div>
         <div className="mb-6">
@@ -57,7 +67,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
             Password
           </label>
           <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 bg-slate-700 border-slate-600 text-slate-200 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-sky-500"
+            className="shadow appearance-none border rounded w-full py-2 px-3 bg-slate-700 border-slate-600 text-slate-200 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
             id="password-signup"
             type="password"
             placeholder="******************"
@@ -65,6 +75,7 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="new-password"
+            disabled={isLoading}
           />
         </div>
         <div className="flex items-center justify-between">
@@ -78,7 +89,12 @@ const SignUp: React.FC<SignUpProps> = ({ onSignUpSuccess, switchToLogin }) => {
         </div>
         <p className="text-center text-slate-400 text-sm mt-6">
           Already have an account?{' '}
-          <button type="button" onClick={switchToLogin} className="font-bold text-sky-500 hover:text-sky-400">
+          <button 
+            type="button" 
+            onClick={switchToLogin} 
+            className="font-bold text-sky-500 hover:text-sky-400 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
             Log In
           </button>
         </p>

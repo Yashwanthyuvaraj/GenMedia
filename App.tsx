@@ -4,27 +4,23 @@ import { useApiKey } from './hooks/useApiKey';
 import { checkAuthStatus, logout } from './api/auth';
 import { useIdleTimer } from './hooks/useIdleTimer';
 
-import ApiKeyPrompt from './components/ApiKeyPrompt';
 import ImageAnalysis from './components/ImageAnalysis';
 import AudioTranscription from './components/AudioTranscription';
 import VideoAnalysis from './components/VideoAnalysis';
 import ImageGeneration from './components/ImageGeneration';
 import TabButton from './components/shared/TabButton';
 import Auth from './components/Auth';
-import SettingsModal from './components/SettingsModal';
+import ErrorMessage from './components/shared/ErrorMessage';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(checkAuthStatus().isLoggedIn);
   const [activeTab, setActiveTab] = useState<Tab>(Tab.ImageAnalysis);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const { isKeyReady, promptForApiKey, handleApiError, getGenAiClient, apiKeyError, revokeApiKey, setUserProvidedApiKey, isVerifying } = useApiKey(isLoggedIn);
+  const { handleApiError, getGenAiClient, apiKeyError } = useApiKey();
 
   const handleLogout = useCallback(() => {
     logout();
-    // Also revoke the key to ensure a clean state for the next login
-    revokeApiKey();
     setIsLoggedIn(false);
-  }, [revokeApiKey]);
+  }, []);
 
   // Auto-logout after 30 minutes of inactivity
   useIdleTimer(handleLogout, 30 * 60 * 1000, isLoggedIn);
@@ -33,16 +29,18 @@ const App: React.FC = () => {
     return <Auth onAuthSuccess={() => setIsLoggedIn(true)} />;
   }
   
-  const isAistudioAvailable = !!window.aistudio;
-  
-  if (!isKeyReady) {
-    return <ApiKeyPrompt 
-      promptForApiKey={promptForApiKey} 
-      setUserProvidedApiKey={setUserProvidedApiKey}
-      error={apiKeyError} 
-      isAistudioAvailable={isAistudioAvailable}
-      isVerifying={isVerifying}
-    />;
+  if (apiKeyError) {
+    return (
+       <div className="flex items-center justify-center min-h-screen bg-slate-900">
+        <div className="text-center p-8 bg-slate-800 rounded-2xl shadow-2xl max-w-lg mx-auto border border-slate-700">
+          <h2 className="text-2xl font-bold text-red-400 mb-4">Application Error</h2>
+          <ErrorMessage title="API Key Configuration Error" message={apiKeyError} />
+           <p className="text-slate-400 mt-6 text-sm">
+            The application cannot function. Please ensure the API key is correctly configured in the environment and has the necessary permissions.
+          </p>
+        </div>
+      </div>
+    );
   }
   
   const renderContent = () => {
@@ -80,16 +78,6 @@ const App: React.FC = () => {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-indigo-400 text-transparent bg-clip-text">GenMedia</h1>
           </div>
           <div className="flex items-center gap-2">
-             <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="p-2 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 transition duration-300"
-              aria-label="Settings"
-            >
-               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.11-1.226a11.98 11.98 0 0 1 2.59 0c.55.219 1.02.684 1.11 1.226a11.98 11.98 0 0 1 0 2.59c-.09.542-.56 1.007-1.11 1.226a11.98 11.98 0 0 1-2.59 0c-.55-.219-1.02-.684-1.11-1.226a11.98 11.98 0 0 1 0-2.59Z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-              </svg>
-            </button>
             <button 
               onClick={handleLogout} 
               className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-lg transition duration-300 text-sm">
@@ -116,14 +104,6 @@ const App: React.FC = () => {
           {renderContent()}
         </div>
       </main>
-
-      <SettingsModal 
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onChangeKey={isAistudioAvailable ? promptForApiKey : revokeApiKey}
-        onRevokeKey={revokeApiKey}
-        isAistudioAvailable={isAistudioAvailable}
-      />
     </div>
   );
 };

@@ -40,14 +40,15 @@ export const login = async (email: string, password: string): Promise<{ success:
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const users = getUsers();
-    const user = users.find(u => u.email === normalizedEmail);
+    // Defensively normalize the stored email during comparison to prevent any data inconsistencies.
+    const user = users.find(u => (u.email || '').toLowerCase().trim() === normalizedEmail);
 
     if (!user) {
-        return { success: false, message: 'This email is not registered. Please sign up.' };
+        return { success: false, message: 'No account found with this email. Please double-check your spelling or sign up.' };
     }
 
     if (user.password !== password) {
-        return { success: false, message: 'Incorrect password. Please try again.' };
+        return { success: false, message: 'The password you entered is incorrect. Please try again.' };
     }
     
     // Credentials match, create a session
