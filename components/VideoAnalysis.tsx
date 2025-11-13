@@ -5,6 +5,7 @@ import SkeletonLoader from './shared/SkeletonLoader';
 import { GeminiComponentProps } from '../types';
 import MarkdownRenderer from './shared/MarkdownRenderer';
 import ErrorMessage from './shared/ErrorMessage';
+import { parseGeminiError } from '../utils/errorUtils';
 
 const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -12,6 +13,8 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [analysis, setAnalysis] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<React.ReactNode>(null);
+  const [errorTitle, setErrorTitle] = useState<string>('Analysis Failed');
   const [progress, setProgress] = useState<string>('');
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -25,11 +28,14 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
       setVideoFile(file);
       setAnalysis('');
       setError('');
+      setErrorDetails(null);
       setProgress('');
       const url = URL.createObjectURL(file);
       setVideoPreview(url);
     } else if (file) {
+      setErrorTitle('Invalid File');
       setError('Please select a valid video file (e.g., MP4, MOV, WEBM).');
+      setErrorDetails(null);
     }
   };
 
@@ -61,6 +67,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
     setVideoPreview(null);
     setAnalysis('');
     setError('');
+    setErrorDetails(null);
     setProgress('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -97,6 +104,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
     }
     setIsLoading(true);
     setError('');
+    setErrorDetails(null);
     setAnalysis('');
     
     try {
@@ -138,7 +146,10 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
 
     } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze the video. The file might be corrupted, or there could be a network issue. Please try again.');
+      const parsedError = parseGeminiError(err, 'analyze the video');
+      setErrorTitle(parsedError.title);
+      setError(parsedError.message);
+      setErrorDetails(parsedError.details);
     } finally {
       setIsLoading(false);
       setProgress('');
@@ -214,7 +225,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
             {isLoading ? (
                 <SkeletonLoader />
             ) : error ? (
-                <ErrorMessage title="Analysis Failed" message={error} />
+                <ErrorMessage title={errorTitle} message={error} details={errorDetails} />
             ) : analysis ? (
                 <div className="w-full h-full flex flex-col">
                 <div className="relative flex-shrink-0">

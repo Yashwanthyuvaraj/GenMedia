@@ -5,6 +5,7 @@ import { GeminiComponentProps } from '../types';
 import { encode } from '../utils/audioUtils';
 import { Modality, Blob as GenAiBlob, LiveServerMessage } from '@google/genai';
 import ErrorMessage from './shared/ErrorMessage';
+import { parseGeminiError } from '../utils/errorUtils';
 
 // Add a declaration for the vendor-prefixed AudioContext to avoid using `any`.
 declare global {
@@ -23,7 +24,7 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
   const [isRecording, setIsRecording] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [currentTurn, setCurrentTurn] = useState('');
-  const [error, setError] = useState('');
+  const [errorInfo, setErrorInfo] = useState<{ title: string; message: string; details: React.ReactNode } | null>(null);
   
   const sessionPromiseRef = useRef<Promise<LiveSession> | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -82,7 +83,7 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
 
   const startRecording = useCallback(async () => {
     setIsRecording(true);
-    setError('');
+    setErrorInfo(null);
     setHistory([]);
     setCurrentTurn('');
     currentTurnTextRef.current = '';
@@ -99,7 +100,11 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
             console.log('Live session opened.');
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!AudioContext) {
-              setError("Your browser does not support the Web Audio API, which is required for this feature.");
+              setErrorInfo({
+                  title: 'Browser Not Supported',
+                  message: 'Your browser does not support the Web Audio API, which is required for this feature.',
+                  details: null,
+              });
               cleanupResources();
               return;
             }
@@ -142,7 +147,8 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
           },
           onerror: (e: ErrorEvent) => {
             console.error('Live session error:', e);
-            setError('A session error occurred. Please try stopping and starting the recording again.');
+            const parsedError = parseGeminiError(e, 'maintain the audio session');
+            setErrorInfo(parsedError);
             cleanupResources();
           },
           onclose: (e: CloseEvent) => {
@@ -158,11 +164,8 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
 
     } catch (err: any) {
       console.error('Failed to start recording:', err);
-      if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
-        setError('Microphone access denied. Please enable microphone permissions for this site in your browser settings.');
-      } else {
-        setError('Failed to access microphone. This could be due to a network issue or a problem with the API configuration.');
-      }
+      const parsedError = parseGeminiError(err, 'start recording');
+      setErrorInfo(parsedError);
       setIsRecording(false);
     }
   }, [getGenAiClient, cleanupResources]);
@@ -195,8 +198,8 @@ const AudioTranscription: React.FC<GeminiComponentProps> = ({ getGenAiClient }) 
           </button>
         </div>
         <div className="bg-slate-900 rounded-lg p-4 min-h-[250px] w-full">
-          {error && <ErrorMessage title="Transcription Error" message={error} />}
-          {!error && (
+          {errorInfo && <ErrorMessage title={errorInfo.title} message={errorInfo.message} details={errorInfo.details} />}
+          {!errorInfo && (
             <div className="text-slate-300 whitespace-pre-wrap text-lg">
               {history.map((turn, i) => <p key={i}>{turn}</p>)}
               <p className="text-slate-400 opacity-90">{currentTurn}</p>

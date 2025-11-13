@@ -6,6 +6,7 @@ import { fileToBase64 } from '../utils/fileUtils';
 import { GeminiComponentProps } from '../types';
 import MarkdownRenderer from './shared/MarkdownRenderer';
 import ErrorMessage from './shared/ErrorMessage';
+import { parseGeminiError } from '../utils/errorUtils';
 
 const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -13,6 +14,8 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [analysis, setAnalysis] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [errorDetails, setErrorDetails] = useState<React.ReactNode>(null);
+  const [errorTitle, setErrorTitle] = useState<string>('Analysis Failed');
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,13 +25,16 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
       setImageFile(file);
       setAnalysis('');
       setError('');
+      setErrorDetails(null);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     } else {
+      setErrorTitle('Invalid File');
       setError('The selected file is not a valid image. Please select a PNG, JPG, GIF, or WEBP file.');
+      setErrorDetails(null);
     }
   };
 
@@ -62,6 +68,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
     }
     setIsLoading(true);
     setError('');
+    setErrorDetails(null);
     setAnalysis('');
 
     try {
@@ -80,7 +87,10 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
       setAnalysis(response.text);
     } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze the image. This could be due to a network issue or a problem with the API configuration. Please try again later.');
+      const parsedError = parseGeminiError(err, 'analyze the image');
+      setErrorTitle(parsedError.title);
+      setError(parsedError.message);
+      setErrorDetails(parsedError.details);
     } finally {
       setIsLoading(false);
     }
@@ -99,6 +109,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
     setImagePreview(null);
     setAnalysis('');
     setError('');
+    setErrorDetails(null);
     if(fileInputRef.current) {
         fileInputRef.current.value = '';
     }
@@ -169,7 +180,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
                 {isLoading ? (
                   <SkeletonLoader />
                 ) : error ? (
-                  <ErrorMessage title="Analysis Failed" message={error} />
+                  <ErrorMessage title={errorTitle} message={error} details={errorDetails} />
                 ) : analysis ? (
                   <div className="w-full h-full flex flex-col">
                     <div className="relative flex-shrink-0">

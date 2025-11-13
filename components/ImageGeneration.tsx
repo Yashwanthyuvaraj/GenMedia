@@ -5,6 +5,7 @@ import Loader from './shared/Loader';
 import { GeminiComponentProps } from '../types';
 import ErrorMessage from './shared/ErrorMessage';
 import { Modality } from '@google/genai';
+import { parseGeminiError } from '../utils/errorUtils';
 
 const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [prompt, setPrompt] = useState<string>('A photorealistic image of a futuristic city skyline at dusk, with flying cars.');
@@ -12,6 +13,7 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [errorDetails, setErrorDetails] = useState<React.ReactNode | null>(null);
+  const [errorTitle, setErrorTitle] = useState<string>('Generation Failed');
 
   const handleGenerate = useCallback(async () => {
     if (!prompt) {
@@ -50,33 +52,16 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => 
       }
 
       if (!foundImage) {
+        setErrorTitle('Generation Failed');
         setError('Image generation failed. The model did not return any images.');
+        setErrorDetails(null);
       }
     } catch (err: any) {
       console.error(err);
-      let errorMessage = 'Failed to generate the image. This could be due to a network issue or a problem with the API configuration. Please try again later.';
-      let details: React.ReactNode | null = null;
-      const errStr = err?.message || JSON.stringify(err);
-      
-      if (errStr.includes("billed users")) {
-        errorMessage = 'This feature requires the API key to be associated with a billed project.';
-        details = (
-          <p>
-            While we're using a free-tier model, some projects may still require billing to be enabled. See the{' '}
-            <a
-              href="https://ai.google.dev/gemini-api/docs/billing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sky-400 hover:underline font-semibold"
-            >
-              billing documentation
-            </a>.
-          </p>
-        );
-      }
-      
-      setError(errorMessage);
-      setErrorDetails(details);
+      const parsedError = parseGeminiError(err, 'generate the image');
+      setErrorTitle(parsedError.title);
+      setError(parsedError.message);
+      setErrorDetails(parsedError.details);
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +111,7 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => 
           {isLoading ? (
             <Loader text="Creating image..." />
           ) : error ? (
-            <ErrorMessage title="Generation Failed" message={error} details={errorDetails} />
+            <ErrorMessage title={errorTitle} message={error} details={errorDetails} />
           ) : generatedImage ? (
              <div className="relative group">
               <img src={generatedImage} alt="Generated" className="max-h-[450px] w-auto rounded-md object-contain" />
