@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, DragEvent } from 'react';
 import Card from './shared/Card';
 import SkeletonLoader from './shared/SkeletonLoader';
@@ -5,7 +6,7 @@ import { GeminiComponentProps } from '../types';
 import MarkdownRenderer from './shared/MarkdownRenderer';
 import ErrorMessage from './shared/ErrorMessage';
 
-const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleApiError }) => {
+const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string>('');
@@ -124,6 +125,8 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
       setProgress('Sending frames to Gemini for analysis...');
       
       const ai = getGenAiClient();
+      if (!ai) return;
+
       const prompt = "Analyze this sequence of video frames and format the response in Markdown. Start with a short, catchy title using a main heading (e.g., '# Title'). Then, provide a concise one-paragraph summary. Finally, list the key events or elements in a bulleted list under a subheading (e.g., '## Key Events').";
       
       const response = await ai.models.generateContent({
@@ -133,15 +136,14 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
 
       setAnalysis(response.text);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze the video. The file might be corrupted or in an unsupported format. Please try again.');
-      handleApiError(err);
+      setError('Failed to analyze the video. The file might be corrupted, or there could be a network issue. Please try again.');
     } finally {
       setIsLoading(false);
       setProgress('');
     }
-  }, [videoFile, captureFrame, getGenAiClient, handleApiError]);
+  }, [videoFile, captureFrame, getGenAiClient]);
 
   const handleCopy = () => {
     if (analysis) {
@@ -174,7 +176,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
             </div>
           ) : (
             <div 
-              className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging ? 'border-sky-500 bg-slate-700/50' : 'border-slate-600'}`}
+              className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging ? 'border-sky-500 bg-sky-500/10 shadow-inner shadow-sky-500/20' : 'border-slate-600 hover:border-slate-500'}`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -190,7 +192,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
 
           {videoPreview && (
             <div className="w-full flex flex-col items-center gap-2">
-              <button onClick={handleAnalyze} disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <button onClick={handleAnalyze} disabled={isLoading} className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30">
                 {isLoading ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -207,7 +209,7 @@ const VideoAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
 
         {(isLoading || error || analysis) && (
           <div className="mt-8 w-full">
-            <hr className="border-slate-700" />
+            <hr className="border-slate-700/50" />
             <div className="mt-8 bg-slate-900/70 backdrop-blur-sm ring-1 ring-white/10 rounded-xl p-6 min-h-[400px] relative flex flex-col justify-center">
             {isLoading ? (
                 <SkeletonLoader />

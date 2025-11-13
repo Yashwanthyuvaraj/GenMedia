@@ -1,6 +1,7 @@
 // MOCK API for demonstration purposes - now with localStorage persistence
 
 interface User {
+  name: string;
   email: string;
   password: string; // In a real app, this should be a hash
 }
@@ -29,7 +30,7 @@ const saveUsers = (users: User[]): void => {
 
 
 // Simulates a login request
-export const login = async (email: string, password: string): Promise<{ success: boolean; token?: string; message?: string }> => {
+export const login = async (email: string, password: string): Promise<{ success: boolean; token?: string; message?: string; userName?: string; }> => {
     // Basic validation
     if (!email || !password) {
         return { success: false, message: 'Email and password are required.' };
@@ -54,15 +55,23 @@ export const login = async (email: string, password: string): Promise<{ success:
     // Credentials match, create a session
     const mockToken = `mock-token-${Date.now()}`;
     localStorage.setItem('authToken', mockToken);
-    return { success: true, token: mockToken };
+    localStorage.setItem('userName', user.name); // Store user's name
+    return { success: true, token: mockToken, userName: user.name };
 };
 
 // Simulates a signup request
-export const signup = async (email: string, password: string): Promise<{ success: boolean; token?: string; message?: string }> => {
+export const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; message?: string; }> => {
     // Basic validation
-    if (!email || !password || password.length < 6) {
-        return { success: false, message: 'Please provide a valid email and a password of at least 6 characters.' };
+    if (!name.trim() || !email) {
+        return { success: false, message: 'Please provide a valid name and email.' };
     }
+
+    // Strong password validation
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return { success: false, message: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' };
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
     console.log(`Attempting signup for ${normalizedEmail}`);
     // Simulate network delay
@@ -76,24 +85,24 @@ export const signup = async (email: string, password: string): Promise<{ success
     }
 
     // Add new user with normalized email
-    const newUser: User = { email: normalizedEmail, password };
+    const newUser: User = { name: name.trim(), email: normalizedEmail, password };
     const updatedUsers = [...users, newUser];
     saveUsers(updatedUsers);
-
-    // Simulate a successful signup and automatic login
-    const mockToken = `mock-token-${Date.now()}`;
-    localStorage.setItem('authToken', mockToken);
-    return { success: true, token: mockToken };
+    
+    // On success, just confirm creation. UI will handle redirecting to login.
+    return { success: true, message: 'Account created successfully!' };
 };
 
 // Simulates a logout request
 export const logout = (): void => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userName');
     console.log('User logged out.');
 };
 
 // Checks if the user has a valid session
-export const checkAuthStatus = (): { isLoggedIn: boolean } => {
+export const checkAuthStatus = (): { isLoggedIn: boolean; userName: string | null; } => {
     const token = localStorage.getItem('authToken');
-    return { isLoggedIn: !!token };
+    const userName = localStorage.getItem('userName');
+    return { isLoggedIn: !!token, userName };
 };

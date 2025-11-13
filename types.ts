@@ -1,4 +1,3 @@
-
 export enum Tab {
   ImageAnalysis,
   AudioTranscription,
@@ -8,5 +7,4 @@ export enum Tab {
 
 export interface GeminiComponentProps {
   getGenAiClient: () => any; // Return type is GoogleGenAI, but using 'any' to avoid type dependency here
-  handleApiError: (error: any) => void;
 }

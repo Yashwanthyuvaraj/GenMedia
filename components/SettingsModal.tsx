@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface SettingsModalProps {
@@ -5,10 +6,9 @@ interface SettingsModalProps {
   onClose: () => void;
   onChangeKey: () => void;
   onRevokeKey: () => void;
-  isAistudioAvailable: boolean;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onChangeKey, onRevokeKey, isAistudioAvailable }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onChangeKey, onRevokeKey }) => {
   if (!isOpen) {
     return null;
   }
@@ -19,10 +19,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onChange
   };
 
   const handleRevoke = () => {
-    if (window.confirm('Are you sure you want to revoke your API key for this session? You will be prompted to provide a new one.')) {
-      onRevokeKey();
-      onClose();
-    }
+    onRevokeKey();
+    onClose();
   };
 
   return (
@@ -45,21 +43,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onChange
         </button>
         
         <h2 className="text-2xl font-bold text-sky-400 mb-4">Manage API Key</h2>
-        <p className="text-slate-300 mb-2">An API key is currently active for your session.</p>
-        
-        {isAistudioAvailable ? (
-            <p className="text-slate-400 text-sm mb-6">You can change the key you are using, or revoke it to be prompted again.</p>
-        ) : (
-            <p className="text-slate-400 text-sm mb-6">You can enter a new key, or revoke the current one for this session.</p>
-        )}
-
+        <p className="text-slate-300 mb-6">An API key is currently active for your session. You can enter a new key or revoke the current one.</p>
 
         <div className="space-y-4">
             <button
                 onClick={handleChange}
                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out"
             >
-                {isAistudioAvailable ? 'Change API Key' : 'Enter New API Key'}
+                Enter New API Key
             </button>
             <button
                 onClick={handleRevoke}

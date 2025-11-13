@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import Card from './shared/Card';
 import Loader from './shared/Loader';
@@ -5,7 +6,7 @@ import { GeminiComponentProps } from '../types';
 import ErrorMessage from './shared/ErrorMessage';
 import { Modality } from '@google/genai';
 
-const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleApiError }) => {
+const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [prompt, setPrompt] = useState<string>('A photorealistic image of a futuristic city skyline at dusk, with flying cars.');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -25,6 +26,8 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient, handl
 
     try {
       const ai = getGenAiClient();
+      if (!ai) return;
+
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { parts: [{ text: prompt }] },
@@ -51,12 +54,12 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient, handl
       }
     } catch (err: any) {
       console.error(err);
-      let errorMessage = 'Failed to generate the image. Please try again.';
+      let errorMessage = 'Failed to generate the image. This could be due to a network issue or a problem with the API configuration. Please try again later.';
       let details: React.ReactNode | null = null;
       const errStr = err?.message || JSON.stringify(err);
-
+      
       if (errStr.includes("billed users")) {
-        errorMessage = 'This feature requires an API key associated with a billed project.';
+        errorMessage = 'This feature requires the API key to be associated with a billed project.';
         details = (
           <p>
             While we're using a free-tier model, some projects may still require billing to be enabled. See the{' '}
@@ -71,14 +74,13 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient, handl
           </p>
         );
       }
-
+      
       setError(errorMessage);
       setErrorDetails(details);
-      handleApiError(err);
     } finally {
       setIsLoading(false);
     }
-  }, [prompt, getGenAiClient, handleApiError]);
+  }, [prompt, getGenAiClient]);
   
   const handleDownload = () => {
     if (!generatedImage) return;
@@ -109,18 +111,18 @@ const ImageGeneration: React.FC<GeminiComponentProps> = ({ getGenAiClient, handl
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="e.g., A blue robot holding a red skateboard."
-            className="w-full bg-slate-700 border border-slate-600 rounded-lg p-3 text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-300 h-28"
+            className="w-full bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-slate-200 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-300 h-28 focus:bg-slate-800"
           />
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-indigo-800 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30"
           >
             {isLoading ? 'Generating...' : 'Generate Image'}
           </button>
         </div>
 
-        <div className="bg-slate-900 rounded-lg p-4 min-h-[500px] flex items-center justify-center flex-col">
+        <div className="bg-slate-900 rounded-lg p-4 min-h-[480px] flex items-center justify-center flex-col">
           {isLoading ? (
             <Loader text="Creating image..." />
           ) : error ? (

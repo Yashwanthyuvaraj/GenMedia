@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Tab } from './types';
 import { useApiKey } from './hooks/useApiKey';
 import { checkAuthStatus, logout } from './api/auth';
@@ -10,41 +11,60 @@ import VideoAnalysis from './components/VideoAnalysis';
 import ImageGeneration from './components/ImageGeneration';
 import TabButton from './components/shared/TabButton';
 import Auth from './components/Auth';
-import ErrorMessage from './components/shared/ErrorMessage';
+import WelcomeModal from './components/WelcomeModal';
+import ScrollToTopButton from './components/shared/ScrollToTopButton';
+
 
 const App: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(checkAuthStatus().isLoggedIn);
+  const [authInfo, setAuthInfo] = useState(checkAuthStatus());
   const [activeTab, setActiveTab] = useState<Tab>(Tab.ImageAnalysis);
-  const { handleApiError, getGenAiClient, apiKeyError } = useApiKey();
+  const [showWelcome, setShowWelcome] = useState(false);
+  const { getGenAiClient } = useApiKey();
+
+  const spotlightRef = useRef<HTMLDivElement>(null);
+
+  const handleAuthSuccess = useCallback(() => {
+    const status = checkAuthStatus();
+    setAuthInfo(status);
+    if (status.isLoggedIn && !sessionStorage.getItem('welcomeShown')) {
+        setShowWelcome(true);
+        sessionStorage.setItem('welcomeShown', 'true');
+    }
+  }, []);
 
   const handleLogout = useCallback(() => {
     logout();
-    setIsLoggedIn(false);
+    setAuthInfo({ isLoggedIn: false, userName: null });
+    sessionStorage.removeItem('welcomeShown');
   }, []);
 
+  // Spotlight cursor effect
+  useEffect(() => {
+    const spotlight = spotlightRef.current;
+    if (!spotlight) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      window.requestAnimationFrame(() => {
+        spotlight.style.background = `radial-gradient(circle at ${e.clientX}px ${e.clientY}px, rgba(29, 78, 216, 0.15), transparent 250px)`;
+      });
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+
   // Auto-logout after 30 minutes of inactivity
-  useIdleTimer(handleLogout, 30 * 60 * 1000, isLoggedIn);
+  useIdleTimer(handleLogout, 30 * 60 * 1000, authInfo.isLoggedIn);
   
-  if (!isLoggedIn) {
-    return <Auth onAuthSuccess={() => setIsLoggedIn(true)} />;
-  }
-  
-  if (apiKeyError) {
-    return (
-       <div className="flex items-center justify-center min-h-screen bg-slate-900">
-        <div className="text-center p-8 bg-slate-800 rounded-2xl shadow-2xl max-w-lg mx-auto border border-slate-700">
-          <h2 className="text-2xl font-bold text-red-400 mb-4">Application Error</h2>
-          <ErrorMessage title="API Key Configuration Error" message={apiKeyError} />
-           <p className="text-slate-400 mt-6 text-sm">
-            The application cannot function. Please ensure the API key is correctly configured in the environment and has the necessary permissions.
-          </p>
-        </div>
-      </div>
-    );
+  if (!authInfo.isLoggedIn) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
   }
   
   const renderContent = () => {
-    const props = { getGenAiClient, handleApiError };
+    const props = { getGenAiClient };
     switch (activeTab) {
       case Tab.ImageAnalysis:
         return <ImageAnalysis {...props} />;
@@ -67,21 +87,35 @@ const App: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans">
-       <header className="bg-slate-900/70 backdrop-blur-sm sticky top-0 z-10 py-4 px-4 sm:px-8 border-b border-slate-800">
+    <div className="min-h-screen text-white font-sans">
+       <WelcomeModal 
+        isOpen={showWelcome} 
+        onClose={() => setShowWelcome(false)} 
+        userName={authInfo.userName || 'User'} 
+      />
+       <div ref={spotlightRef} className="pointer-events-none fixed inset-0 z-20 transition-all duration-300"></div>
+       <header className="bg-slate-950/70 backdrop-blur-lg sticky top-0 z-10 py-4 px-4 sm:px-8 border-b border-white/10 shadow-xl shadow-black/10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-sky-400">
               <path fillRule="evenodd" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clipRule="evenodd" />
               <path d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z" />
             </svg>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-indigo-400 text-transparent bg-clip-text">GenMedia</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-sky-400 to-fuchsia-500 text-transparent bg-clip-text">GenMedia</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {authInfo.userName && (
+                <div className="hidden sm:flex items-center gap-2 animate-fade-in">
+                    <p className="text-slate-300 text-sm font-medium">Welcome, <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-fuchsia-400">{authInfo.userName}</span>!</p>
+                </div>
+            )}
             <button 
-              onClick={handleLogout} 
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-lg transition duration-300 text-sm">
-              Logout
+              onClick={handleLogout}
+              title="Logout"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-lg border border-white/20 text-slate-300 hover:text-white font-semibold w-10 h-10 flex items-center justify-center rounded-full transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                </svg>
             </button>
           </div>
         </div>
@@ -104,6 +138,8 @@ const App: React.FC = () => {
           {renderContent()}
         </div>
       </main>
+
+      <ScrollToTopButton />
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, DragEvent } from 'react';
 import Card from './shared/Card';
 import SkeletonLoader from './shared/SkeletonLoader';
@@ -6,7 +7,7 @@ import { GeminiComponentProps } from '../types';
 import MarkdownRenderer from './shared/MarkdownRenderer';
 import ErrorMessage from './shared/ErrorMessage';
 
-const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleApiError }) => {
+const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient }) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<string>('');
@@ -66,6 +67,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
     try {
       const base64Image = await fileToBase64(imageFile);
       const ai = getGenAiClient();
+      if (!ai) return;
 
       const imagePart = { inlineData: { mimeType: imageFile.type, data: base64Image } };
       const textPart = { text: "Analyze this image and format the response in Markdown. Start with a short, catchy title using a main heading (e.g., '# Title'). Then, provide a concise one-paragraph summary. Finally, list the key elements in a bulleted list under a subheading (e.g., '## Key Elements')." };
@@ -76,14 +78,13 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
       });
 
       setAnalysis(response.text);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError('Failed to analyze the image. Please check your network connection and try again.');
-      handleApiError(err);
+      setError('Failed to analyze the image. This could be due to a network issue or a problem with the API configuration. Please try again later.');
     } finally {
       setIsLoading(false);
     }
-  }, [imageFile, getGenAiClient, handleApiError]);
+  }, [imageFile, getGenAiClient]);
 
   const handleCopy = () => {
     if (analysis) {
@@ -113,7 +114,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
       <div className="flex flex-col gap-8">
         <div className="w-full max-w-3xl mx-auto flex flex-col gap-4">
           <div 
-            className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging ? 'border-sky-500 bg-slate-700/50' : 'border-slate-600'}`}
+            className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging ? 'border-sky-500 bg-sky-500/10 shadow-inner shadow-sky-500/20' : 'border-slate-600 hover:border-slate-500'}`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -149,7 +150,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
             <button
               onClick={handleAnalyze}
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:opacity-90 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30"
             >
               {isLoading ? (
                   <>
@@ -163,7 +164,7 @@ const ImageAnalysis: React.FC<GeminiComponentProps> = ({ getGenAiClient, handleA
 
         {(isLoading || error || analysis) && (
             <div>
-              <hr className="border-slate-700" />
+              <hr className="border-slate-700/50" />
               <div className="mt-8 bg-slate-900/70 backdrop-blur-sm ring-1 ring-white/10 rounded-xl p-6 min-h-[400px] relative flex flex-col justify-center">
                 {isLoading ? (
                   <SkeletonLoader />
